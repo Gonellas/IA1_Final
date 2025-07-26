@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -17,6 +16,9 @@ public class GameManager : MonoBehaviour
     [Header("Canvas")]
     public GameObject winCanvas;
     public TMPro.TextMeshProUGUI winText;
+
+    [HideInInspector]
+    public bool isGameOver = false;
 
     private void Awake()
     {
@@ -37,16 +39,23 @@ public class GameManager : MonoBehaviour
 
     public void TeamDefeated(bool isRedTeam)
     {
-        Debug.Log("TeamDefeated llamado");
         if (winCanvas == null || winText == null)
         {
-            Debug.LogError("winCanvas o winText no asignados!");
             return;
         }
         winCanvas.SetActive(true);
         winText.text = isRedTeam ? "¡Blue Team Wins!" : "¡Red Team Wins!";
+        isGameOver = true;
+        Time.timeScale = 0f;
+
     }
 
+    public void RestartGame()
+    {
+        isGameOver = false;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
 
     public bool InSight(Vector3 start, Vector3 end)
     {
@@ -73,4 +82,3 @@ public class GameManager : MonoBehaviour
         return closest;
     }
 }
-

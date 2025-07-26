@@ -32,10 +32,6 @@ public abstract class FSM<TState> : MonoBehaviour where TState : System.Enum
             _currentStateEnum = name;
             _currentState.OnEnter();
         }
-        else
-        {
-            Debug.LogWarning($"El estado {name} no existe en la FSM.");
-        }
     }
 
     public void Update()

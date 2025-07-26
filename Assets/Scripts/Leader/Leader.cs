@@ -17,6 +17,7 @@ public class Leader : MonoBehaviour, IDamageable
     public float ViewRadius => _viewRadius;
     public float ViewAngle => _viewAngle;
     public bool IsRedTeam => _isRedTeam;
+    public float AttackDamage => _attackDamage;
 
     [Header("Settings")]
     [SerializeField] private bool _isRedTeam = true;
@@ -62,6 +63,9 @@ public class Leader : MonoBehaviour, IDamageable
 
     private void Update()
     {
+        if (GameManager.Instance.isGameOver)
+            return;
+
         LeaderFSM.Update();
 
         if (_isRedTeam && Input.GetMouseButtonDown(0)) SetTargetFromMouse();
@@ -97,7 +101,7 @@ public class Leader : MonoBehaviour, IDamageable
     public void TakeDamage(int damage)
     {
         _currentHealth -= damage;
-        Debug.Log($"{gameObject.name} recibió {damage} de daño. Vida actual: {_currentHealth}");
+
         if (_currentHealth <= 0)
         {
             Die();
@@ -106,12 +110,10 @@ public class Leader : MonoBehaviour, IDamageable
 
     private void Die()
     {
-        Debug.Log($"{gameObject.name} ha muerto.");
         GameManager.Instance.TeamDefeated(_isRedTeam);
         gameObject.SetActive(false);
     }
 
-    public float AttackDamage => _attackDamage;
     public bool CanAttack()
     {
         return Time.time >= _lastAttackTime + _attackCooldown;
@@ -120,7 +122,6 @@ public class Leader : MonoBehaviour, IDamageable
     public void PerformAttack()
     {
         _lastAttackTime = Time.time;
-        Debug.Log($"{name} resetea cooldown en {Time.time}");
     }
 
     public Transform GetEnemyTarget()
@@ -128,14 +129,17 @@ public class Leader : MonoBehaviour, IDamageable
         Collider[] hits = Physics.OverlapSphere(transform.position, ViewRadius);
         float minDist = Mathf.Infinity;
         Transform nearest = null;
+
         foreach (var hit in hits)
         {
             bool isEnemy = (IsRedTeam && hit.CompareTag("BlueTeam")) || (!IsRedTeam && hit.CompareTag("RedTeam"));
+
             if (!isEnemy) continue;
 
             if (InFOV(hit.transform))
             {
                 float dist = Vector3.Distance(transform.position, hit.transform.position);
+
                 if (dist < minDist)
                 {
                     minDist = dist;

@@ -17,54 +17,45 @@ public class EntityAttack : State<EntitiesStates>
 
     public override void OnUpdate()
     {
-        if (_target == null)
+        if (_target == null || !_agent.EnemyInSight())
         {
             fsm.ChangeState(EntitiesStates.FollowLeader);
             return;
         }
 
         Vector3 dir = (_target.position - _transform.position).normalized;
-        Vector3 planarDir = new Vector3(dir.x, 0, dir.z);
-
-        if (planarDir.sqrMagnitude > 0.01f)
-        {
-            Quaternion targetRot = Quaternion.LookRotation(planarDir, Vector3.up);
-            _transform.rotation = Quaternion.Lerp(_transform.rotation, targetRot, Time.deltaTime * 8f);
-        }
-
         float dist = Vector3.Distance(_transform.position, _target.position);
 
-        if (dist > _agent.AttackRange)
+        if (dist > _agent.attackRange)
         {
-            // Se acerca si está lejos
-            Vector3 move = dir * _agent.FollowSpeed * Time.deltaTime;
-            Vector3 nextPos = _transform.position + move;
+            Vector3 avoidForce = _agent.obstacleAvoidance.GetAvoidanceForce(dir);
+            Vector3 finalMove = dir * _agent.followSpeed + avoidForce;
+            finalMove = Vector3.ClampMagnitude(finalMove, _agent.followSpeed);
+
+            Vector3 nextPos = _transform.position + finalMove * Time.deltaTime;
             nextPos.y = _transform.position.y;
             _transform.position = nextPos;
+
+            Vector3 planarDir = new Vector3(finalMove.x, 0, finalMove.z);
+
+            if (planarDir.sqrMagnitude > 0.01f)
+            {
+                Quaternion targetRot = Quaternion.LookRotation(planarDir, Vector3.up);
+                _transform.rotation = Quaternion.Lerp(_transform.rotation, targetRot, Time.deltaTime * 8f);
+            }
         }
         else
         {
-            // Ataca si está en rango y puede atacar
             if (_agent.CanAttack())
             {
                 if (_target.TryGetComponent(out IDamageable dmg))
                 {
-                    Debug.Log($"[EntityAttack] {_agent.name} ataca a {_target.name} por {_agent.AttackDamage} de daño.");
-                    dmg.TakeDamage(_agent.AttackDamage);
+                    dmg.TakeDamage(_agent.attackDamage);
                     _agent.PerformAttack();
                 }
-                else
-                {
-                    Debug.Log($"[EntityAttack] {_target.name} NO implementa IDamageable.");
-                }
+                else Debug.Log($"[EntityAttack] {_target.name} NO implementa IDamageable.");
             }
         }
-
-        if (!_agent.EnemyInSight())
-        {
-            fsm.ChangeState(EntitiesStates.FollowLeader);
-        }
-        else fsm.ChangeState(EntitiesStates.Attacking);
     }
 
     public override void OnExit() { }

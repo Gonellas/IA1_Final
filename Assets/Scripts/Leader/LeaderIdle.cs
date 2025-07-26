@@ -14,10 +14,9 @@ public class LeaderIdle : State<LeaderStates>
     public override void OnUpdate()
     {
         var target = _leader.GetEnemyTarget();
-        // ¡Ahora chequea por el enum!
+
         if (target != null && _leader.LeaderFSM.CurrentStateEnum != LeaderStates.Attacking)
         {
-            Debug.Log($"[LeaderIdle] {_leader.name} ve a {target.name} y cambia a Attacking");
             _leader.LeaderFSM.ChangeState(LeaderStates.Attacking);
         }
     }

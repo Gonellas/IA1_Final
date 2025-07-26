@@ -5,8 +5,6 @@ public class EntityFollowLeader : State<EntitiesStates>
 {
     private AIAgent _agent;
     private Transform _leader;
-
-    // Pathfinding
     private List<Node> _path;
     private int _nodeIndex;
     private float _minDistanceToLeader = 1.5f;
@@ -18,7 +16,7 @@ public class EntityFollowLeader : State<EntitiesStates>
 
     public override void OnEnter()
     {
-        _leader = _agent.LeaderTransform;
+        _leader = _agent.leaderTransform;
         _path = null;
         _nodeIndex = 0;
     }
@@ -33,7 +31,6 @@ public class EntityFollowLeader : State<EntitiesStates>
 
         if (_agent.EnemyInSight())
         {
-            Debug.Log($"{_agent.name} ve un enemigo y cambia a atacar");
             fsm.ChangeState(EntitiesStates.Attacking);
             return;
         }
@@ -53,14 +50,18 @@ public class EntityFollowLeader : State<EntitiesStates>
             if (_path != null && _nodeIndex < _path.Count)
             {
                 Vector3 target = _path[_nodeIndex].transform.position;
-                Vector3 dir = (target - _transform.position).normalized * _agent.FollowSpeed;
+                Vector3 dir = (target - _transform.position).normalized * _agent.followSpeed;
                 Vector3 avoidForce = _agent.obstacleAvoidance.GetAvoidanceForce(dir);
-                Vector3 moveDir = (dir + avoidForce).normalized;
-                Vector3 nextPos = _transform.position + moveDir * Time.deltaTime;
+
+                Vector3 finalMove = dir + avoidForce;
+                finalMove = Vector3.ClampMagnitude(finalMove, _agent.followSpeed);
+
+                Vector3 nextPos = _transform.position + finalMove * Time.deltaTime;
                 nextPos.y = _transform.position.y;
                 _transform.position = nextPos;
 
-                Vector3 planarDir = new Vector3(moveDir.x, 0, moveDir.z);
+                Vector3 planarDir = new Vector3(finalMove.x, 0, finalMove.z);
+
                 if (planarDir.sqrMagnitude > 0.01f)
                 {
                     Quaternion targetRot = Quaternion.LookRotation(planarDir, Vector3.up);
@@ -80,7 +81,7 @@ public class EntityFollowLeader : State<EntitiesStates>
             Vector3 toLeader = _leader.position - _transform.position;
 
             Vector3 separation = Vector3.zero;
-            Collider[] nearby = Physics.OverlapSphere(_transform.position, _agent.SeparationRadius);
+            Collider[] nearby = Physics.OverlapSphere(_transform.position, _agent.separationRadius);
             foreach (var other in nearby)
             {
                 if (other.transform != _transform && other.GetComponent<AIAgent>())
@@ -94,21 +95,24 @@ public class EntityFollowLeader : State<EntitiesStates>
 
             if (distanceToLeader > _minDistanceToLeader)
             {
-                Vector3 desired = toLeader.normalized * _agent.FollowSpeed;
-                Vector3 moveDir = desired + separation * _agent.SeparationWeight;
+                Vector3 desired = toLeader.normalized * _agent.followSpeed;
+                Vector3 moveDir = desired + separation * _agent.separationWeight;
                 Vector3 avoidForce = _agent.obstacleAvoidance.GetAvoidanceForce(moveDir);
-                Vector3 finalDir = (moveDir + avoidForce).normalized;
 
-                _agent.Velocity += finalDir;
-                _agent.Velocity = Vector3.ClampMagnitude(_agent.Velocity, _agent.FollowSpeed);
+                Vector3 finalMove = moveDir + avoidForce;
 
-                Vector3 nextPos = _transform.position + _agent.Velocity * Time.deltaTime;
+                finalMove = Vector3.ClampMagnitude(finalMove, _agent.followSpeed);
+
+                _agent.velocity += finalMove;
+                _agent.velocity = Vector3.ClampMagnitude(_agent.velocity, _agent.followSpeed);
+
+                Vector3 nextPos = _transform.position + _agent.velocity * Time.deltaTime;
                 nextPos.y = _transform.position.y;
                 _transform.position = nextPos;
 
-                if (_agent.Velocity.sqrMagnitude > 0.01f)
+                if (_agent.velocity.sqrMagnitude > 0.01f)
                 {
-                    Vector3 dir = new Vector3(_agent.Velocity.x, 0, _agent.Velocity.z);
+                    Vector3 dir = new Vector3(_agent.velocity.x, 0, _agent.velocity.z);
                     if (dir.sqrMagnitude > 0.01f)
                     {
                         Quaternion targetRot = Quaternion.LookRotation(dir, Vector3.up);

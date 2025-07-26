@@ -38,7 +38,6 @@ public class LeaderMovement : State<LeaderStates>
 
         Vector3 targetPos = _path[_nodeIndex].transform.position;
 
-        // Recalculá el path si pierde visión
         if (!GameManager.Instance.InSight(_leader.transform.position, targetPos))
         {
             Node start = GameManager.Instance.ClosestNode(_leader.transform.position);
@@ -47,20 +46,19 @@ public class LeaderMovement : State<LeaderStates>
             _nodeIndex = 0;
         }
 
-        // 1. Dirección principal hacia el objetivo
+        // 1 Dirección objetivo
         Vector3 dir = (targetPos - _leader.transform.position).normalized;
-        // 2. Calculá la fuerza de avoidance
+        // 2 fuerza avoidance
         Vector3 avoidForce = _leader.obstacleAvoidance.GetAvoidanceForce(dir);
-        // 3. Sumá la fuerza y normalizá la dirección final
+        // 3 dirección normalizada
         Vector3 moveDir = (dir + avoidForce).normalized;
-        // 4. Movimiento real
+        // 4 Movimiento final
         Vector3 move = moveDir * _leader.Speed * Time.deltaTime;
 
         Vector3 newPos = _leader.transform.position + move;
         newPos.y = _leader.transform.position.y;
         _leader.transform.position = newPos;
 
-        // Rotación del líder
         Vector3 planarDir = new Vector3(moveDir.x, 0, moveDir.z);
         if (planarDir.sqrMagnitude > 0.01f)
         {

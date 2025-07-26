@@ -13,7 +13,7 @@ public class EntityIdle : State<EntitiesStates>
 
     public override void OnUpdate()
     {
-        if (_agent.LeaderTransform != null)
+        if (_agent.leaderTransform != null)
         {
             fsm.ChangeState(EntitiesStates.FollowLeader);
         }

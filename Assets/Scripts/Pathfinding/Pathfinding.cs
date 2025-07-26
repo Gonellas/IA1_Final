@@ -3,9 +3,6 @@ using UnityEngine;
 
 public class Pathfinding : MonoBehaviour
 {
-    /// <summary>
-    /// A* básico usando nodos conectados por referencias.
-    /// </summary>
     public List<Node> AStar(Node start, Node end)
     {
         if (start == null || end == null) return null;
@@ -22,8 +19,7 @@ public class Pathfinding : MonoBehaviour
         {
             Node current = openSet.Get();
 
-            if (current == end)
-                return ReconstructPath(cameFrom, current);
+            if (current == end) return ReconstructPath(cameFrom, current);
 
             foreach (Node neighbor in current.GetNeighbors())
             {
@@ -44,9 +40,6 @@ public class Pathfinding : MonoBehaviour
         return null; // no path found
     }
 
-    /// <summary>
-    /// Theta* usa A* como base y luego intenta "saltar" nodos si hay visión directa.
-    /// </summary>
     public List<Node> ThetaStar(Node start, Node end)
     {
         List<Node> path = AStar(start, end);
@@ -59,7 +52,7 @@ public class Pathfinding : MonoBehaviour
         {
             if (HasLineOfSight(path[current].transform.position, path[nextNext].transform.position))
             {
-                path.RemoveAt(current + 1); // omitimos el nodo intermedio
+                path.RemoveAt(current + 1); 
             }
             else
             {
@@ -71,19 +64,14 @@ public class Pathfinding : MonoBehaviour
         return path;
     }
 
-    /// <summary>
-    /// Devuelve true si no hay paredes entre los dos puntos.
-    /// </summary>
     private bool HasLineOfSight(Vector3 start, Vector3 end)
     {
         Vector3 dir = end - start;
         float dist = dir.magnitude;
+
         return !Physics.Raycast(start, dir.normalized, dist, GameManager.Instance.WallsLayer);
     }
 
-    /// <summary>
-    /// Reconstruye el camino al llegar al nodo destino.
-    /// </summary>
     private List<Node> ReconstructPath(Dictionary<Node, Node> cameFrom, Node current)
     {
         List<Node> path = new List<Node>();
@@ -95,6 +83,7 @@ public class Pathfinding : MonoBehaviour
         }
 
         path.Reverse();
+
         return path;
     }
 }

@@ -3,35 +3,34 @@
 public class AIAgent : MonoBehaviour, IDamageable
 {
     public EntitiesFSM fsm;
-    public Vector3 Velocity { get; set; }
+    public Vector3 velocity { get; set; }
     public bool isHealing = false;
     [SerializeField] private bool _isRedTeam = true;
 
     [Header("Flocking")]
-    public Transform LeaderTransform;
-    public float SeparationRadius = 2f;
-    public float SeparationWeight = 1.5f;
-    public float FollowSpeed = 3f;
+    public Transform leaderTransform;
+    public float separationRadius = 2f;
+    public float separationWeight = 1.5f;
+    public float followSpeed = 3f;
 
-    [Header("Combate")]
-    public float Health = 100f;
-    public float MaxHealth = 100f;
-    public float FleeThreshold = 10f;
-    public float AttackRange = 2f;
-    public float AttackCooldown = 2f;
-    public int AttackDamage = 5;
+    [Header("Combat")]
+    public float health = 100f;
+    public float maxHealth = 100f;
+    public float fleeThreshold = 10f;
+    public float attackRange = 2f;
+    public float attackCooldown = 2f;
+    public int attackDamage = 5;
     private float _lastAttackTime = 0f;
 
     [Header("Flee")]
-    public float FleeSpeed = 4f;
-    public Transform safeZone; // Usado para pathfinding
+    public float fleeSpeed = 4f;
+    public Transform safeZone; 
 
     [Header("Enemy Detection")]
     public LayerMask enemyLayer;
     public float visionRadius = 10f;
     public float visionAngle = 90f;
 
-    // Radio de curado para safezone
     public float safeZoneRadius = 1f;
 
     [Header("Obstacle Avoidance")]
@@ -39,8 +38,7 @@ public class AIAgent : MonoBehaviour, IDamageable
     public float avoidForce = 6f;
     public LayerMask obstacleLayer;
 
-    [HideInInspector] public ObstacleAvoidance obstacleAvoidance;
-
+    public ObstacleAvoidance obstacleAvoidance;
 
     private void Start()
     {
@@ -62,11 +60,15 @@ public class AIAgent : MonoBehaviour, IDamageable
 
     private void Update()
     {
+
+        if (GameManager.Instance.isGameOver)
+            return;
+
         fsm.Update();
 
-        // Curación manual sin Rigidbody
         bool foundSafeZone = false;
         Collider[] hits = Physics.OverlapSphere(transform.position, safeZoneRadius);
+
         foreach (var hit in hits)
         {
             if (hit.CompareTag("SafeZone"))
@@ -77,10 +79,10 @@ public class AIAgent : MonoBehaviour, IDamageable
         }
         isHealing = foundSafeZone;
 
-        if (isHealing && Health < MaxHealth)
+        if (isHealing && health < maxHealth)
         {
-            Health += 20f * Time.deltaTime;
-            if (Health > MaxHealth) Health = MaxHealth;
+            health += 20f * Time.deltaTime;
+            if (health > maxHealth) health = maxHealth;
         }
     }
 
@@ -92,7 +94,6 @@ public class AIAgent : MonoBehaviour, IDamageable
         float angle = Vector3.Angle(transform.forward, dirToTarget);
         float dist = Vector3.Distance(transform.position, target.position);
 
-        // Chequea ángulo y radio
         if (angle < visionAngle / 2 && dist <= visionRadius)
         {
             if (!Physics.Linecast(transform.position, target.position, GameManager.Instance._wallsLayer))
@@ -148,7 +149,7 @@ public class AIAgent : MonoBehaviour, IDamageable
 
     public bool CanAttack()
     {
-        return Time.time >= _lastAttackTime + AttackCooldown;
+        return Time.time >= _lastAttackTime + attackCooldown;
     }
 
     public void PerformAttack()
@@ -159,29 +160,25 @@ public class AIAgent : MonoBehaviour, IDamageable
     public void TakeDamage(int amount)
     {
         if (isHealing) return;
-        Health -= amount;
-        Debug.Log($"{name} recibió {amount} de daño. Vida actual: {Health}");
 
-        if (Health <= 0)
+        health -= amount;
+
+        if (health <= 0)
         {
             fsm.ChangeState(EntitiesStates.Fleeing);
             return;
         }
-        if (Health <= FleeThreshold && fsm.CurrentState != null && !(fsm.CurrentState is EntityFlee))
+        if (health <= fleeThreshold && fsm.CurrentState != null && !(fsm.CurrentState is EntityFlee))
         {
-            Debug.Log($"{name} entra en estado Flee porque la vida ({Health}) <= FleeThreshold ({FleeThreshold})");
             fsm.ChangeState(EntitiesStates.Fleeing);
         }
     }
 
-    // Si querés los OnDrawGizmosSelected para ver el FOV:
     private void OnDrawGizmosSelected()
     {
-        // Dibuja el radio de visión
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireSphere(transform.position, visionRadius);
 
-        // Dibuja el ángulo de visión
         Vector3 left = Quaternion.Euler(0, -visionAngle / 2, 0) * transform.forward;
         Vector3 right = Quaternion.Euler(0, visionAngle / 2, 0) * transform.forward;
         Gizmos.color = Color.cyan;
